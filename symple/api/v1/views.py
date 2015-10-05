@@ -13,19 +13,22 @@ from symple.modules.pages.models import Template, Page, TypePage
 
 bp = flask.Blueprint('api', __name__, url_prefix='/api')
 
+
 @bp.errorhandler(404)
 def not_found(error):
     return flask.make_response(flask.jsonify(
         {
-            'status' : 404,
+            'status': 404,
             'error': 'Not found'
-        } ), 404)
+        }), 404)
+
 
 @bp.errorhandler(CustomException)
 def handle_custom_exception(error):
     response = flask.jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
+
 
 # API Index
 
@@ -35,7 +38,7 @@ def index():
     if flask.request.method == 'GET':
         json_results = []
         output = {
-            'message':'Welcome to Symple Api',
+            'message': 'Welcome to Symple Api',
             'version': __version__
         }
         json_results.append(output)
@@ -47,7 +50,7 @@ def index():
 def add_user():
     if flask.request.method == 'POST':
         data = flask.request.get_json(force=True)
-        username =  data.get('username', None)
+        username = data.get('username', None)
         full_name = data.get('full_name', None)
         email = data.get('email', None)
         active = data.get('active', None)
@@ -70,9 +73,13 @@ def add_user():
                     email=email,
                     active=active)
         db.session.add(user)
+
         db.session.commit()
 
+        data.update({'id': user.id})
+
         return flask.jsonify(user=data)
+
 
 @bp.route('/projects/add', methods=['POST'])
 @requires_auth
@@ -82,18 +89,33 @@ def add_project():
         user_id = data.get('user_id', None)
         paid = data.get('paid', None)
         template_id = data.get('template_id', None)
+        company_name = data.get('company_name', None)
+        business_about = data.get('business_about', None)
+        business_services = data.get('business_services', None)
         if user_id is None:
-            raise CustomException('user_id is mandatory',  400)
+            raise CustomException('user_id is mandatory', 400)
         if template_id is None:
             raise CustomException('template_id is mandatory', 400)
+        if company_name is None:
+            raise CustomException('company_name is mandatory', 400)
+        if business_about is None:
+            raise CustomException('business_about is mandatory', 400)
+        if business_services is None:
+            raise CustomException('business_services is mandatory', 400)
 
         project = Project(user_id=user_id,
                           paid=paid,
-                          template_id=template_id)
+                          template_id=template_id,
+                          company_name=company_name,
+                          business_about=business_about,
+                          business_services=business_services)
         db.session.add(project)
         db.session.commit()
 
+        data.update({'id' : project.id })
+
         return flask.jsonify(project=data)
+
 
 @bp.route('/templates/add', methods=['POST'])
 @requires_auth
@@ -108,6 +130,7 @@ def add_template():
         db.session.commit()
 
         return flask.jsonify(template=data)
+
 
 @bp.route('/pages/add', methods=['POST'])
 @requires_auth
@@ -149,7 +172,3 @@ def add_type():
         db.session.commit()
 
         return flask.jsonify(type_page=data)
-
-
-
-
